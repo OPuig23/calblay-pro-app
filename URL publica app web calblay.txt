@@ -1,0 +1,10 @@
+URL publica app web calblay
+
+https://calblay-pro-app.vercel.app/
+
+
+git add .
+git commit -m "Missatge dels canvis"
+git push
+
+// quan volguii aplicar canvis
