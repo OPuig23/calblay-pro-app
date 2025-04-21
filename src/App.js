@@ -19,13 +19,14 @@ export default function App() {
 
   const handleSearch = async ({ mode = 'range', start, end, name } = {}) => {
     const trimmedName = name?.trim() || '';
+    // Si buits i ja no som a landing, tornem a landing
     if (!trimmedName && !start && !end && step !== 'search') {
       setEvents([]);
       setStep('search');
       return;
     }
 
-    // Calcula timeMin/timeMax per a "day" o "range"
+    // Definir timeMin/timeMax segons mode
     let timeMin, timeMax;
     if (mode === 'day' && start) {
       const d = new Date(start);
@@ -95,40 +96,32 @@ export default function App() {
   return (
     <div className="min-h-screen bg-green-100 flex flex-col items-center px-4 sm:px-6 py-6 gap-6">
 
-      {/* Logo: més gran a landing, més petit després */}
-      <Logo
-        className={`fixed top-4 left-4 select-none transition-all
-          ${step === 'search'
-            ? 'w-32 sm:w-48 md:w-64 h-auto'
-            : 'w-8 sm:w-16 md:w-24 h-auto'
-          }`}
-      />
-
-      {/* Landing → SearchForm; Llista/Detail → SearchBar */}
-      {step === 'search' ? (
-        <div className="w-full max-w-4xl">
+      {/* Landing view: logo + form centered */}
+      {step === 'search' && (
+        <header className="flex flex-col items-center gap-8 w-full max-w-4xl">
+          <Logo className="w-64 h-auto select-none" />
           <SearchForm onSearch={handleSearch} initial={lastQuery} />
-        </div>
-      ) : (
-        <div className="w-full max-w-4xl flex justify-center">
-          <SearchBar onSearch={handleSearch} initial={lastQuery} />
-        </div>
+        </header>
       )}
 
-      {/* Resultats o Detall */}
+      {/* List/detail view: fixed small logo + compact bar */}
+      {step !== 'search' && (
+        <>
+          <Logo className="fixed top-4 left-4 select-none w-8 h-auto transition-all" />
+          <div className="w-full max-w-4xl flex justify-center">
+            <SearchBar onSearch={handleSearch} initial={lastQuery} />
+          </div>
+        </>
+      )}
+
+      {/* Results list or detail */}
       {step === 'list' && (
-        <ResultsList
-          events={events}
-          onSelect={handleSelect}
-          onBack={handleBack}
-        />
+        <ResultsList events={events} onSelect={handleSelect} onBack={handleBack} />
       )}
       {step === 'detail' && (
-        <DetailView
-          event={selectedEvent}
-          onBack={handleBack}
-        />
+        <DetailView event={selectedEvent} onBack={handleBack} />
       )}
+
     </div>
   );
 }
