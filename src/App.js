@@ -19,21 +19,21 @@ export default function App() {
 
   const handleSearch = async ({ mode = 'range', start, end, name } = {}) => {
     const trimmedName = name?.trim() || '';
-    // Si buits i ja no som a landing, tornem a landing
     if (!trimmedName && !start && !end && step !== 'search') {
       setEvents([]);
       setStep('search');
       return;
     }
 
-    // Definir timeMin/timeMax segons mode
+    // Determine timeMin/timeMax
     let timeMin, timeMax;
     if (mode === 'day' && start) {
-      const d = new Date(start);
-      d.setHours(0, 0, 0, 0);
-      timeMin = d.toISOString();
-      d.setDate(d.getDate() + 1);
-      timeMax = d.toISOString();
+      const d0 = new Date(start);
+      d0.setHours(0,0,0,0);
+      const d1 = new Date(d0);
+      d1.setDate(d1.getDate()+1);
+      timeMin = d0.toISOString();
+      timeMax = d1.toISOString();
     } else {
       if (start) timeMin = new Date(start).toISOString();
       if (end)   timeMax = new Date(end).toISOString();
@@ -53,14 +53,12 @@ export default function App() {
     if (timeMin)     params.set('timeMin', timeMin);
     if (timeMax)     params.set('timeMax', timeMax);
 
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?${params.toString()}`;
-    console.log('Fetching events:', url);
-
     try {
-      const res = await fetch(url);
+      const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?${params.toString()}`
+      );
       if (!res.ok) throw new Error(`Google API error ${res.status}`);
       const { items } = await res.json();
-
       let normalized = items.map(item => ({
         id:          item.id,
         name:        item.summary || 'Sense títol',
@@ -71,11 +69,9 @@ export default function App() {
         fitxes:      [],
         docs:        {}
       }));
-
       if (mode === 'day' && start) {
         normalized = normalized.filter(evt => evt.date === start);
       }
-
       setEvents(normalized);
       setStep('list');
     } catch (err) {
@@ -96,32 +92,46 @@ export default function App() {
   return (
     <div className="min-h-screen bg-green-100 flex flex-col items-center px-4 sm:px-6 py-6 gap-6">
 
-      {/* Landing view: logo + form centered */}
+      {/* ———————————————————————————————————————————————— */}
+      {/* 1) Landing (pas de cerca): logo gran i centrat */}
+      {/* ———————————————————————————————————————————————— */}
       {step === 'search' && (
-        <header className="flex flex-col items-center gap-8 w-full max-w-4xl">
-          <Logo className="w-64 h-auto select-none" />
+        <div className="w-full max-w-4xl flex flex-col items-center gap-6">
+          <Logo className="w-48 sm:w-64 md:w-72 h-auto select-none" />
           <SearchForm onSearch={handleSearch} initial={lastQuery} />
-        </header>
+        </div>
       )}
 
-      {/* List/detail view: fixed small logo + compact bar */}
+      {/* ———————————————————————————————————————————————— */}
+      {/* 2) Llista / Detall: logo petit fixat + SearchBar compacte */}
+      {/* ———————————————————————————————————————————————— */}
       {step !== 'search' && (
         <>
-          <Logo className="fixed top-4 left-4 select-none w-8 h-auto transition-all" />
+          <Logo
+            className="fixed top-4 left-4 w-8 sm:w-12 md:w-16 h-auto select-none"
+          />
           <div className="w-full max-w-4xl flex justify-center">
             <SearchBar onSearch={handleSearch} initial={lastQuery} />
           </div>
         </>
       )}
 
-      {/* Results list or detail */}
+      {/* ———————————————————————————————————————————————— */}
+      {/* 3) Resultats o Detall */}
+      {/* ———————————————————————————————————————————————— */}
       {step === 'list' && (
-        <ResultsList events={events} onSelect={handleSelect} onBack={handleBack} />
+        <ResultsList
+          events={events}
+          onSelect={handleSelect}
+          onBack={handleBack}
+        />
       )}
       {step === 'detail' && (
-        <DetailView event={selectedEvent} onBack={handleBack} />
+        <DetailView
+          event={selectedEvent}
+          onBack={handleBack}
+        />
       )}
-
     </div>
   );
 }
