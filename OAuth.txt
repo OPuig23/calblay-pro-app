@@ -1,0 +1,17 @@
+1035789785029-187nggm7qnn4fq7ric82r6aoc5goc87r.apps.googleusercontent.com
+
+Id client Oauth
+
+
+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
+
+Secret
+
+
+https://docs.google.com/spreadsheets/d/e/2PACX-1vTaEsNpsHaZEZAWI4GoCDncrGXFPivCxb_xKk4DUvY98LnrshM-iMXHV59HMNdlwA/pub?gid=2008639616&single=true&output=csv
+
+Codi incidències
+
+https://docs.google.com/spreadsheets/d/e/2PACX-1vRB7sx4Vf9sVTSUreFJJKrHxAEY7pIxeKZA5X2drgPASOzehXLSxIjoqng-SaJ5rg/pub?gid=2008639616&single=true&output=csv
+
+https://drive.google.com/drive/folders/1IgC3uqtPdVUahgFizxLC6t3ozAE-hwNH?usp=drive_link

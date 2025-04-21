@@ -1,8 +1,11 @@
-/* Debug: si veus el fons rosa, el CSS s'està aplicant */
-body {
-  background: pink;
-}
-
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, sans-serif;
+  background-color: #e0f8ec;
+}
