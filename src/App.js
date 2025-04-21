@@ -18,25 +18,22 @@ export default function App() {
   const CALENDAR_ID = process.env.REACT_APP_GOOGLE_CALENDAR_ID;
 
   const handleSearch = async ({ mode = 'range', start, end, name } = {}) => {
-    const trimmedName   = name?.trim() || '';
-    const nameOnlySearch = !!trimmedName && !start && !end;
-
+    const trimmedName = name?.trim() || '';
     if (!trimmedName && !start && !end && step !== 'search') {
       setEvents([]);
       setStep('search');
       return;
     }
 
-    // Prepare time window
+    // Calcula timeMin/timeMax per a "day" o "range"
     let timeMin, timeMax;
     if (mode === 'day' && start) {
-      const dayStart = new Date(start);
-      dayStart.setHours(0,0,0,0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-      timeMin = dayStart.toISOString();
-      timeMax = dayEnd.toISOString();
-    } else if (!nameOnlySearch) {
+      const d = new Date(start);
+      d.setHours(0, 0, 0, 0);
+      timeMin = d.toISOString();
+      d.setDate(d.getDate() + 1);
+      timeMax = d.toISOString();
+    } else {
       if (start) timeMin = new Date(start).toISOString();
       if (end)   timeMax = new Date(end).toISOString();
     }
@@ -51,7 +48,6 @@ export default function App() {
       maxResults: '50',
       timeZone: 'Europe/Madrid'
     });
-    // **Sempre** afegim q si hi ha texto
     if (trimmedName) params.set('q', trimmedName);
     if (timeMin)     params.set('timeMin', timeMin);
     if (timeMax)     params.set('timeMax', timeMax);
@@ -75,7 +71,6 @@ export default function App() {
         docs:        {}
       }));
 
-      // Filtrat extra per mode "day"
       if (mode === 'day' && start) {
         normalized = normalized.filter(evt => evt.date === start);
       }
@@ -98,16 +93,18 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-green-100 flex flex-col items-center p-6 gap-6">
+    <div className="min-h-screen bg-green-100 flex flex-col items-center px-4 sm:px-6 py-6 gap-6">
+
+      {/* Logo: més gran a landing, més petit després */}
       <Logo
-        className={`fixed top-4 left-4 select-none transition-all ${
-          step === 'search'
-            ? 'w-48 sm:w-64 md:w-72 h-auto'
-            : 'w-16 sm:w-24 md:w-32 h-auto'
-        }`}
-        
+        className={`fixed top-4 left-4 select-none transition-all
+          ${step === 'search'
+            ? 'w-32 sm:w-48 md:w-64 h-auto'
+            : 'w-8 sm:w-16 md:w-24 h-auto'
+          }`}
       />
 
+      {/* Landing → SearchForm; Llista/Detail → SearchBar */}
       {step === 'search' ? (
         <div className="w-full max-w-4xl">
           <SearchForm onSearch={handleSearch} initial={lastQuery} />
@@ -118,11 +115,19 @@ export default function App() {
         </div>
       )}
 
+      {/* Resultats o Detall */}
       {step === 'list' && (
-        <ResultsList events={events} onSelect={handleSelect} onBack={handleBack} />
+        <ResultsList
+          events={events}
+          onSelect={handleSelect}
+          onBack={handleBack}
+        />
       )}
       {step === 'detail' && (
-        <DetailView event={selectedEvent} onBack={handleBack} />
+        <DetailView
+          event={selectedEvent}
+          onBack={handleBack}
+        />
       )}
     </div>
   );

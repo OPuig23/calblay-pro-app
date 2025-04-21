@@ -9,7 +9,7 @@ export default function SearchForm({ onSearch, initial = {} }) {
   const [name,  setName]  = useState(initial.name  || '');
   const [error, setError] = useState('');
 
-  // Retorna cadena YYYY‑MM‑DD del dia següent
+  // Retorna YYYY‑MM‑DD del dia següent
   const getNextDate = (dateStr) => {
     const d = new Date(dateStr);
     d.setDate(d.getDate() + 1);
@@ -20,26 +20,25 @@ export default function SearchForm({ onSearch, initial = {} }) {
     e.preventDefault();
     const q = name.trim();
 
-    // 1) Cerca només per nom (parcial)
+    // 1) Si tenim nom, fem només cerca per nom (parcial)
     if (q) {
       setError('');
       onSearch({ mode: 'range', start: '', end: '', name: q });
       return;
     }
 
-    // 2) Mode “Dia concret”
+    // 2) Dia concret
     if (mode === 'day') {
       if (!start) {
         setError('Cal seleccionar una data.');
         return;
       }
-      const next = getNextDate(start);
       setError('');
-      onSearch({ mode, start, end: next, name: '' });
+      onSearch({ mode, start, end: getNextDate(start), name: '' });
       return;
     }
 
-    // 3) Mode “Rang”
+    // 3) Rang de dates
     if (!start || !end) {
       setError('Cal seleccionar data inicial i final.');
       return;
@@ -48,7 +47,6 @@ export default function SearchForm({ onSearch, initial = {} }) {
       setError('La data final ha de ser igual o posterior a la inicial.');
       return;
     }
-
     setError('');
     onSearch({ mode, start, end, name: '' });
   };
@@ -56,28 +54,28 @@ export default function SearchForm({ onSearch, initial = {} }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-4xl bg-white rounded-3xl shadow p-6 flex flex-col gap-4"
+      className="w-full max-w-4xl bg-white rounded-3xl shadow p-6 flex flex-col gap-6"
     >
-      {/* Selector de mode */}
-      <div className="flex justify-center gap-4">
+      {/* 1) Selector de mode */}
+      <div className="flex flex-col sm:flex-row justify-center gap-4">
         {['range', 'day'].map(m => (
           <button
             key={m}
             type="button"
             onClick={() => setMode(m)}
-            className={`px-4 py-2 rounded-full font-medium transition ${
-              mode === m
+            className={`px-4 py-2 rounded-full font-medium transition 
+              ${mode === m
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             {m === 'range' ? 'Rang de dates' : 'Dia concret'}
           </button>
         ))}
       </div>
 
-      {/* Inputs de data */}
-      <div className="flex gap-4">
+      {/* 2) Date pickers */}
+      <div className="flex flex-col sm:flex-row gap-4">
         <label className="relative flex-1">
           <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
           <input
@@ -99,8 +97,8 @@ export default function SearchForm({ onSearch, initial = {} }) {
         </label>
       </div>
 
-      {/* Cerca per nom i botó */}
-      <div className="flex items-center gap-4">
+      {/* 3) Cerca per nom + botó */}
+      <div className="flex flex-col sm:flex-row items-center gap-4">
         <input
           type="text"
           placeholder="Nom (opcional)"
@@ -110,15 +108,15 @@ export default function SearchForm({ onSearch, initial = {} }) {
         />
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 flex items-center transition-shadow shadow-md"
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 flex items-center justify-center transition-shadow shadow-md"
         >
           <Search className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Missatge d’error */}
+      {/* 4) Missatge d’error */}
       {error && (
-        <p className="text-red-600 text-center font-medium mt-2">
+        <p className="text-red-600 text-center font-medium">
           {error}
         </p>
       )}
