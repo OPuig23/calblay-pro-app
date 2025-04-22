@@ -1,6 +1,6 @@
 // src/components/DetailView.js
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, LogOut, Clock4, LogIn, Truck, GraduationCap } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import LoginPage from './LoginPage';
 
@@ -42,18 +42,6 @@ export default function DetailView({ event, onBack, token, setToken }) {
   }, [event]);
 
   useEffect(() => {
-    if (tab === 'personal') {
-      fetch(PERSONAL_CSV_URL)
-        .then(res => res.text())
-        .then(text => {
-          const wb = XLSX.read(text, { type: 'string' });
-          setPersonalData(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]));
-        })
-        .catch(console.error);
-    }
-  }, [tab]);
-
-  useEffect(() => {
     if (tab === 'contracte' && token && event?.name && API_KEY && CONTRACTS_FOLDER_ID) {
       const q = `'${CONTRACTS_FOLDER_ID}' in parents and trashed = false`;
       const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,webViewLink)&key=${API_KEY}`;
@@ -62,7 +50,7 @@ export default function DetailView({ event, onBack, token, setToken }) {
         .then(data => setContractFiles(data.files?.filter(f => isMatch(f.name, event.name)) || []))
         .catch(() => setContractFiles([]));
     }
-  }, [tab, event, API_KEY, CONTRACTS_FOLDER_ID, token]);
+  }, [tab, event, token, API_KEY, CONTRACTS_FOLDER_ID]);
 
   useEffect(() => {
     if (tab === 'pressupost' && token && event?.name && API_KEY && BUDGETS_FOLDER_ID) {
@@ -73,15 +61,17 @@ export default function DetailView({ event, onBack, token, setToken }) {
         .then(data => setBudgetFiles(data.files?.filter(f => isMatch(f.name, event.name)) || []))
         .catch(() => setBudgetFiles([]));
     }
-  }, [tab, event, API_KEY, BUDGETS_FOLDER_ID, token]);
+  }, [tab, event, token, API_KEY, BUDGETS_FOLDER_ID]);
 
   if (!event) return null;
 
   if ((tab === 'contracte' || tab === 'pressupost') && !token) {
-    return <LoginPage onLogin={(tok) => {
-      localStorage.setItem('token', tok);
-      setToken(tok);
-    }} onCancel={() => setTab('docs')} />;
+    return (
+      <LoginPage
+        onLogin={tok => { localStorage.setItem('token', tok); setToken(tok); }}
+        onCancel={() => setTab('docs')}
+      />
+    );
   }
 
   const colors = ['bg-blue-100', 'bg-green-100', 'bg-yellow-100', 'bg-purple-100', 'bg-pink-100', 'bg-red-100'];
@@ -100,76 +90,75 @@ export default function DetailView({ event, onBack, token, setToken }) {
     .filter(Boolean);
 
   const fullEncs = event.attachments.filter(a => a.title.toLowerCase().startsWith('full enc'));
-  const otherAtts = event.attachments.filter(a => !a.title.toLowerCase().startsWith('full enc') && !a.title.toLowerCase().startsWith('personal'));
+  const otherAtts = event.attachments.filter(a => !a.title.toLowerCase().startsWith('full enc'));
 
   const tabs = [
-    { id: 'docs',       label: '📄 Full encàrrec',   items: fullEncs.map(a => ({ text: a.title, link: a.fileUrl })) },
-    { id: 'personal',   label: '🧍 Personal',        items: Object.keys(matchedPersonal).length === 0 ? [{ text: 'No hi ha dades de personal per aquest esdeveniment.' }] : Object.entries(matchedPersonal).flatMap(([dept, members], i) => [
-      { text: `${dept} (${members.length})`, color: colors[i % colors.length] },
+    { id: 'docs',     label: '📄 Full encàrrec',   items: fullEncs.map(a => ({ text: a.title, link: a.fileUrl })) },
+    { id: 'personal', label: '🧍 Personal',        items: Object.entries(matchedPersonal).flatMap(([dept, members], i) => [
+      { header: true, text: `${dept} (${members.length})`, color: colors[i % colors.length] },
       ...members.map(p => {
-        const entrada = p['Hora entrada']?.slice(0, 5);
-        const sortida = p['Hora de sortida']?.slice(0, 5);
-        const horesTotals = p['Total hores']?.replace('m.h', '').trim();
-        const formatted = horesTotals?.match(/(\d+):(\d+)/);
-        const hores = formatted ? `${formatted[1]}:${formatted[2]}h` : horesTotals + 'h';
-        const carnet = (p['Carnet de conduir'] || '').toLowerCase().startsWith('s');
-        const isResponsible = p.Responsable?.toLowerCase().startsWith('s');
-        const capIcon = isResponsible ? ' 🎓' : '';
+        const entrada = p['Hora entrada']?.slice(0, 5) || '--';
+        const sortida = p['Hora de sortida']?.slice(0, 5) || '--';
+        const total = p['Total hores']?.replace('m.h', '').trim();
         return {
-          text: `${p.Nom}${capIcon} — 🕐 ${entrada || '—'} → 🕔 ${sortida || '—'} — ⏱️ ${hores}${carnet ? ' 🚚' : ''}`,
-          isResponsible
+          text: `${p.Nom}${p.Responsable?.toLowerCase().startsWith('s') ? ' 🎓' : ''} — 🕒 ${entrada} → 🕔 ${sortida} — ⏱️ ${total}h${p['Carnet de conduir']?.toLowerCase().startsWith('s') ? ' 🚚' : ''}`,
+          isResponsible: p.Responsable?.toLowerCase().startsWith('s')
         };
       })
     ]) },
-    { id: 'pressupost', label: '💶 Pressupost',      items: budgetFiles.map(f => ({ text: f.name, link: f.webViewLink })) },
-    { id: 'incidencies',label: '⚠️ Incidències',     items: matchedIncidencies.map(i => ({ text: `⚠️ ${i}` })) },
-    { id: 'fitxes',     label: '🗂️ Fitxes tècniques', items: otherAtts.map(a => ({ text: a.title, link: a.fileUrl })) },
-    { id: 'contracte',  label: '✍️ Contracte',       items: contractFiles.map(f => ({ text: f.name, link: f.webViewLink })) },
+    { id: 'incidencies',label:'⚠️ Incidències',     items: matchedIncidencies.map(txt => ({ text: txt })) },
+    { id: 'fitxes',    label: '🗂️ Fitxes tècniques', items: otherAtts.map(a => ({ text: a.title, link: a.fileUrl })) },
+    { id: 'pressupost',label: '💶 Pressupost',      items: budgetFiles.map(f => ({ text: f.name, link: f.webViewLink })) },
+    { id: 'contracte', label: '✍️ Contracte',       items: contractFiles.map(f => ({ text: f.name, link: f.webViewLink })) }
   ];
 
   return (
-    <div className="space-y-4">
-      <button onClick={onBack} className="text-sm text-blue-600 flex items-center hover:underline">
-        <ArrowLeft className="w-4 h-4 mr-1" /> Tornar
+    <div className="space-y-6 max-w-md mx-auto p-4">
+      <button onClick={onBack} className="flex items-center text-sm text-blue-700">
+        <ArrowLeft className="w-5 h-5 mr-2" /> Tornar
       </button>
 
-      <div className="p-4 bg-yellow-50 rounded-lg space-y-1">
-        <h2 className="text-2xl font-bold text-pink-600">{event.name}</h2>
-        <p className="text-gray-700">📅 {event.date}</p>
-        {event.pax && <p className="text-pink-500 font-semibold">👥 {event.pax} pax</p>}
-        {event.location && <p className="text-gray-700">📍 {event.location}</p>}
+      <div className="bg-yellow-50 rounded-2xl p-4 text-center">
+        <h2 className="text-xl font-bold">{event.name}</h2>
+        <p>📅 {event.date}</p>
+        {event.location && <p>📍 {event.location}</p>}
+        {event.pax > 0 && <p>👥 {event.pax} pax</p>}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="flex flex-col space-y-3">
         {tabs.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2 rounded-lg font-semibold ${tab === t.id ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-800'}`}
-          >{t.label}</button>
+            className={
+              `flex items-center justify-center gap-2 py-3 rounded-2xl text-lg font-bold transform transition ` +
+              (tab === t.id
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white scale-105 shadow-lg'
+                : 'bg-gray-200 text-gray-800 hover:bg-gray-300')
+            }
+          >
+            {t.label}
+          </button>
         ))}
       </div>
 
-      <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-        {tabs.find(t => t.id === tab)?.items.length
-          ? tabs.find(t => t.id === tab).items.map((node, idx) => (
-            <div
-              key={idx}
-              className={`py-1 px-3 rounded ${node.isResponsible ? 'font-bold text-yellow-800' : ''} ${node.color || ''}`}
-            >
-              {node.link ? (
-                <a href={node.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                  {node.text}
+      <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
+        {(tabs.find(x => x.id === tab)?.items || []).length ? (
+          tabs.find(x => x.id === tab).items.map((it, i) => (
+            <div key={i} className={`p-2 rounded-lg ${it.header ? it.color : 'bg-white shadow'}`}> 
+              {it.link ? (
+                <a href={it.link} target="_blank" rel="noreferrer" className="underline">
+                  {it.text}
                 </a>
               ) : (
-                <span>{node.text}</span>
+                <span>{it.text}</span>
               )}
             </div>
           ))
-          : <p className="italic text-gray-500">No hi ha dades...</p>
-        }
+        ) : (
+          <p className="text-center text-gray-500 italic">Selecciona una pestanya</p>
+        )}
       </div>
     </div>
   );
 }
-

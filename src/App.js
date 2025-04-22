@@ -19,6 +19,7 @@ export default function App() {
 
   const handleSearch = async ({ mode = 'range', start, end, name } = {}) => {
     const trimmedName = name?.trim() || '';
+    // si netejem cerca: tornem a search
     if (!trimmedName && !start && !end && step !== 'search') {
       setEvents([]);
       setStep('search');
@@ -58,20 +59,26 @@ export default function App() {
       );
       if (!res.ok) throw new Error(`Google API error ${res.status}`);
       const { items } = await res.json();
-      let normalized = items.map(item => ({
+
+      const normalized = items.map(item => ({
         id: item.id,
         name: item.summary || 'Sense títol',
         date: (item.start?.dateTime || item.start?.date || '').split('T')[0],
         attachments: item.attachments || [],
+        location: item.location || '',         // <-- afegim la ubicació
+        pax: item.attendees?.length || 0,      // opcional: nombre de participants
         personal: [],
         incidencies: [],
         fitxes: [],
         docs: {}
       }));
-      if (mode === 'day' && start) {
-        normalized = normalized.filter(evt => evt.date === start);
-      }
-      setEvents(normalized);
+
+      // si mode day, filtrem per exacta
+      const finalList = (mode === 'day' && start)
+        ? normalized.filter(evt => evt.date === start)
+        : normalized;
+
+      setEvents(finalList);
       setStep('list');
     } catch (err) {
       console.error('Error fetching events:', err);
@@ -90,7 +97,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-green-100 flex flex-col items-center px-4 sm:px-6 py-6 gap-6 font-comic">
+    <div className="min-h-screen text-sm bg-green-100 flex flex-col items-center px-4 sm:px-6 py-6 gap-6">
 
       {step === 'search' && (
         <div className="w-full max-w-2xl flex flex-col items-center gap-6">
@@ -115,7 +122,7 @@ export default function App() {
           onBack={handleBack}
         />
       )}
-      {step === 'detail' && (
+      {step === 'detail' && selectedEvent && (
         <DetailView
           event={selectedEvent}
           onBack={handleBack}
