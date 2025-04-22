@@ -2,19 +2,19 @@
 import React, { useState } from 'react';
 
 /* Components */
-import Logo        from './components/Logo';
-import SearchForm  from './components/SearchForm';
-import SearchBar   from './components/SearchBar';
+import Logo from './components/Logo';
+import SearchForm from './components/SearchForm';
+import SearchBar from './components/SearchBar';
 import ResultsList from './components/ResultsList';
-import DetailView  from './components/DetailView';
+import DetailView from './components/DetailView';
 
 export default function App() {
-  const [events,        setEvents]        = useState([]);
+  const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [step,          setStep]          = useState('search');  // 'search' | 'list' | 'detail'
-  const [lastQuery,     setLastQuery]     = useState({});
+  const [step, setStep] = useState('search'); // 'search' | 'list' | 'detail'
+  const [lastQuery, setLastQuery] = useState({});
 
-  const API_KEY     = process.env.REACT_APP_GOOGLE_API_KEY;
+  const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
   const CALENDAR_ID = process.env.REACT_APP_GOOGLE_CALENDAR_ID;
 
   const handleSearch = async ({ mode = 'range', start, end, name } = {}) => {
@@ -25,18 +25,17 @@ export default function App() {
       return;
     }
 
-    // Determine timeMin/timeMax
     let timeMin, timeMax;
     if (mode === 'day' && start) {
       const d0 = new Date(start);
-      d0.setHours(0,0,0,0);
+      d0.setHours(0, 0, 0, 0);
       const d1 = new Date(d0);
-      d1.setDate(d1.getDate()+1);
+      d1.setDate(d1.getDate() + 1);
       timeMin = d0.toISOString();
       timeMax = d1.toISOString();
     } else {
       if (start) timeMin = new Date(start).toISOString();
-      if (end)   timeMax = new Date(end).toISOString();
+      if (end) timeMax = new Date(end).toISOString();
     }
 
     setLastQuery({ mode, start, end, name: trimmedName });
@@ -50,8 +49,8 @@ export default function App() {
       timeZone: 'Europe/Madrid'
     });
     if (trimmedName) params.set('q', trimmedName);
-    if (timeMin)     params.set('timeMin', timeMin);
-    if (timeMax)     params.set('timeMax', timeMax);
+    if (timeMin) params.set('timeMin', timeMin);
+    if (timeMax) params.set('timeMax', timeMax);
 
     try {
       const res = await fetch(
@@ -60,14 +59,14 @@ export default function App() {
       if (!res.ok) throw new Error(`Google API error ${res.status}`);
       const { items } = await res.json();
       let normalized = items.map(item => ({
-        id:          item.id,
-        name:        item.summary || 'Sense títol',
-        date:        (item.start?.dateTime || item.start?.date || '').split('T')[0],
+        id: item.id,
+        name: item.summary || 'Sense títol',
+        date: (item.start?.dateTime || item.start?.date || '').split('T')[0],
         attachments: item.attachments || [],
-        personal:    [],
+        personal: [],
         incidencies: [],
-        fitxes:      [],
-        docs:        {}
+        fitxes: [],
+        docs: {}
       }));
       if (mode === 'day' && start) {
         normalized = normalized.filter(evt => evt.date === start);
@@ -85,40 +84,30 @@ export default function App() {
     setSelectedEvent(evt);
     setStep('detail');
   };
+
   const handleBack = () => {
     setStep(step === 'detail' ? 'list' : 'search');
   };
 
   return (
-    <div className="min-h-screen bg-green-100 flex flex-col items-center px-4 sm:px-6 py-6 gap-6">
+    <div className="min-h-screen bg-green-100 flex flex-col items-center px-4 sm:px-6 py-6 gap-6 font-comic">
 
-      {/* ———————————————————————————————————————————————— */}
-      {/* 1) Landing (pas de cerca): logo gran i centrat */}
-      {/* ———————————————————————————————————————————————— */}
       {step === 'search' && (
-        <div className="w-full max-w-4xl flex flex-col items-center gap-6">
-          <Logo className="w-48 sm:w-64 md:w-72 h-auto select-none" />
+        <div className="w-full max-w-2xl flex flex-col items-center gap-6">
+          <Logo className="w-48 sm:w-64 h-auto select-none" />
           <SearchForm onSearch={handleSearch} initial={lastQuery} />
         </div>
       )}
 
-      {/* ———————————————————————————————————————————————— */}
-      {/* 2) Llista / Detall: logo petit fixat + SearchBar compacte */}
-      {/* ———————————————————————————————————————————————— */}
       {step !== 'search' && (
         <>
-          <Logo
-            className="fixed top-4 left-4 w-8 sm:w-12 md:w-16 h-auto select-none"
-          />
-          <div className="w-full max-w-4xl flex justify-center">
+          <Logo className="fixed top-4 left-4 w-10 h-auto select-none" />
+          <div className="w-full max-w-3xl flex justify-center">
             <SearchBar onSearch={handleSearch} initial={lastQuery} />
           </div>
         </>
       )}
 
-      {/* ———————————————————————————————————————————————— */}
-      {/* 3) Resultats o Detall */}
-      {/* ———————————————————————————————————————————————— */}
       {step === 'list' && (
         <ResultsList
           events={events}
