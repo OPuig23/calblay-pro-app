@@ -6,7 +6,6 @@ import LoginPage from './LoginPage';
 import IncidentForm from './IncidentForm';
 import PersonalTab from './PersonalTab';
 
-// CSV URLs
 const PERSONAL_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQcEtnI6uRkch6n6E6tyJij1i6nFkkZp73MCmcqbCN6uXvOo9uzwN5MB39zJVp6Jh0iF2nz8cOx0y9A/pub?gid=798164058&single=true&output=csv';
 const INCIDENCIES_CSV_URL =
@@ -20,7 +19,6 @@ export default function DetailView({ event, onBack, token, setToken }) {
   const [isAddingIncident, setIsAddingIncident] = useState(false);
   const [newIncidents, setNewIncidents] = useState([]);
 
-  // Helpers
   const normalize = useCallback(s => s?.toString().toLowerCase().trim() || '', []);
   const isMatch = useCallback((a,b) => normalize(a).slice(0,10) === normalize(b).slice(0,10), [normalize]);
   const formatHours = useCallback(str => {
@@ -32,7 +30,6 @@ export default function DetailView({ event, onBack, token, setToken }) {
     return `${h}:${mm.toString().padStart(2,'0')}h`;
   }, []);
 
-  // Load CSV data on relevant tab
   useEffect(() => {
     if (!event || !['personal','incidencies'].includes(tab)) return;
     setLoading(true);
@@ -42,8 +39,8 @@ export default function DetailView({ event, onBack, token, setToken }) {
     ]).finally(()=>setLoading(false));
   }, [tab, event]);
 
-  // Incident handlers
   const handleAddIncident = inc => setNewIncidents(prev=>[...prev,inc]);
+
   const handleSendEmail = () => {
     if (!newIncidents.length) return;
     const subject = `Incidències - ${event.name}`;
@@ -58,6 +55,16 @@ export default function DetailView({ event, onBack, token, setToken }) {
       `&body=${encodeURIComponent(body)}`;
   };
 
+  const handleNotifyResponsables = () => {
+    fetch('http://localhost:3010/api/avis-responsable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventName: event.name })
+    })
+      .then(res => res.ok ? alert('✅ Correu enviat al responsable!') : alert('❌ Error enviant correu'))
+      .catch(() => alert('❌ Error de connexió amb el servidor'));
+  };
+
   const tabsDef = [
     {id:'docs', label:'📜 Full encàrrec', color:'#EF5350'},
     {id:'personal', label:'🧍 Personal', color:'#AB47BC'},
@@ -69,7 +76,6 @@ export default function DetailView({ event, onBack, token, setToken }) {
 
   if (!event) return null;
 
-  // New Incident Screen
   if (isAddingIncident) {
     return (
       <div className="min-h-screen bg-green-50 p-4">
@@ -103,12 +109,10 @@ export default function DetailView({ event, onBack, token, setToken }) {
     );
   }
 
-  // Budget/Contract guard
   if ((tab==='pressupost'||tab==='contracte') && !token) {
     return <LoginPage onLogin={tok=>{localStorage.setItem('token',tok);setToken(tok);}} onCancel={()=>setTab(null)}/>;
   }
 
-  // Tab content renderer
   const renderTabContent = () => {
     if (loading) return <p className="text-center py-4">Carregant...</p>;
     switch(tab) {
@@ -127,7 +131,6 @@ export default function DetailView({ event, onBack, token, setToken }) {
     }
   };
 
-  // Main menu
   if (tab===null) {
     return (
       <div className="min-h-screen bg-green-50 p-4">
@@ -140,12 +143,12 @@ export default function DetailView({ event, onBack, token, setToken }) {
           </div>
         </div>
         <button onClick={()=>setIsAddingIncident(true)} className="w-full py-3 mb-4 bg-orange-500 text-white font-semibold rounded-xl shadow">+ Incidència</button>
+        <button onClick={handleNotifyResponsables} className="w-full py-3 mb-4 bg-green-700 text-white font-semibold rounded-xl shadow">📩 Notificar responsable</button>
         {tabsDef.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} className="w-full py-3 mb-3 rounded-xl text-white font-semibold shadow" style={{backgroundColor:t.color}}>{t.label}</button>))}
       </div>
     );
   }
 
-  // Selected tab content
   return (
     <div className="min-h-screen bg-green-50 p-4">
       <button onClick={()=>setTab(null)} className="text-blue-600 mb-4 flex items-center"><ArrowLeft className="mr-1"/>Menú</button>
