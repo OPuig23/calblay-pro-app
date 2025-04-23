@@ -40,9 +40,9 @@ export default function App() {
     if (name) params.set('q', name.trim());
     if (mode === 'day' && start) {
       const d0 = new Date(start);
-      d0.setHours(0, 0, 0, 0);
+      d0.setHours(0,0,0,0);
       const d1 = new Date(d0);
-      d1.setDate(d1.getDate() + 1);
+      d1.setDate(d1.getDate()+1);
       params.set('timeMin', d0.toISOString());
       params.set('timeMax', d1.toISOString());
     } else {
@@ -60,16 +60,14 @@ export default function App() {
       );
       if (!res.ok) throw new Error(`Google API error ${res.status}`);
       const { items } = await res.json();
-      setEvents(
-        items.map((item) => ({
-          id: item.id,
-          name: item.summary || 'Sense títol',
-          date: (item.start?.dateTime || item.start?.date || '').split('T')[0],
-          attachments: item.attachments || [],
-          location: item.location || '',
-          pax: item.attendees?.length || 0,
-        }))
-      );
+      setEvents(items.map(item => ({
+        id: item.id,
+        name: item.summary || 'Sense títol',
+        date: (item.start?.dateTime || item.start?.date || '').split('T')[0],
+        attachments: item.attachments || [],
+        location: item.location || '',
+        pax: item.attendees?.length || 0,
+      })));
     } catch (err) {
       console.error(err);
       setEvents([]);
@@ -77,105 +75,98 @@ export default function App() {
   };
 
   // Search by responsible
-  const handleResponsibleSearch = async (resp) => {
+  const handleResponsibleSearch = async resp => {
     if (!resp) return;
     try {
       const csvRes = await fetch(PERSONAL_CSV_URL);
       const csvTxt = await csvRes.text();
       const { data } = Papa.parse(csvTxt, { header: true });
-      // filter rows where Responsable is 'Si' and Nom starts with input
       const matches = data.filter(
-        (r) =>
-          r.Responsable?.toLowerCase() === 'si' &&
-          r.Nom?.toLowerCase().startsWith(resp.toLowerCase())
+        r => r.Responsable?.toLowerCase()==='si' && r.Nom?.toLowerCase().startsWith(resp.toLowerCase())
       );
-      const evtNames = [...new Set(matches.map((r) => r['Nom Esdeveniment']))];
+      const evtNames = [...new Set(matches.map(r=>r['Nom Esdeveniment']))];
       if (!evtNames.length) {
         alert('No s’ha trobat cap esdeveniment per aquest responsable');
         return;
       }
-      // fetch events matching these names
-      let all = [];
-      for (const name of evtNames) {
-        const p = new URLSearchParams({
-          key: API_KEY,
-          singleEvents: 'true',
-          orderBy: 'startTime',
-          maxResults: '50',
-          timeZone: 'Europe/Madrid',
-          q: name,
+      let all=[];
+      for(const name of evtNames){
+        const p=new URLSearchParams({
+          key:API_KEY,
+          singleEvents:'true',
+          orderBy:'startTime',
+          maxResults:'50',
+          timeZone:'Europe/Madrid',
+          q:name,
         });
-        const r = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
-            CALENDAR_ID
-          )}/events?${p.toString()}`
+        const r=await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?${p.toString()}`
         );
-        if (!r.ok) continue;
-        const { items } = await r.json();
-        const normalized = items.map((item) => ({
-          id: item.id,
-          name: item.summary || 'Sense títol',
-          date: (item.start?.dateTime || item.start?.date || '').split('T')[0],
-          attachments: item.attachments || [],
-          location: item.location || '',
-          pax: item.attendees?.length || 0,
-        }));
-        all = all.concat(normalized);
+        if(!r.ok) continue;
+        const { items }=await r.json();
+        all=all.concat(items.map(item=>({
+          id:item.id,
+          name:item.summary||'Sense títol',
+          date:(item.start?.dateTime||item.start?.date||'').split('T')[0],
+          attachments:item.attachments||[],
+          location:item.location||'',
+          pax:item.attendees?.length||0,
+        })));
       }
-      setLastQuery({ responsible: resp });
+      setLastQuery({responsible:resp});
       setEvents(all);
       setStep('list');
-    } catch (e) {
+    }catch(e){
       console.error(e);
       alert('Error al cercar per responsable');
     }
   };
 
-  const handleSelect = (evt) => {
+  const handleSelect = evt=>{
     setSelectedEvent(evt);
     setStep('detail');
   };
-  const handleBack = () => {
-    if (step === 'detail') {
+  const handleBack = ()=>{
+    if(step==='detail'){
       setStep('list');
       setSelectedEvent(null);
-    } else if (step === 'list') {
+    } else if(step==='list'){
       setStep('search');
       setEvents([]);
     }
   };
 
-  return (
+  return(
     <div className="min-h-screen bg-green-100 flex flex-col items-center px-4 py-6 gap-6">
-      <Logo className="w-48 sm:w-64 h-auto select-none" />
+      <Logo className="w-48 sm:w-64 h-auto select-none"/>
 
-      {/* Always show date search bar on list/detail */}
-      {step !== 'search' && (
+      {/* Show search bar only on results list */}
+      {step==='list' && (
         <div className="w-full max-w-3xl">
-          <SearchBar onSearch={handleSearch} initial={lastQuery} />
+          <SearchBar onSearch={handleSearch} initial={lastQuery}/>
         </div>
       )}
 
       {/* On search screen show both forms */}
-      {step === 'search' && (
+      {step==='search' && (
         <>
           <div className="w-full max-w-2xl">
-            <SearchForm onSearch={handleSearch} initial={lastQuery} />
+            <SearchForm onSearch={handleSearch} initial={lastQuery}/>
           </div>
           <div className="w-full max-w-2xl">
-            <ResponsibleSearchForm onSearch={handleResponsibleSearch} />
+            <ResponsibleSearchForm onSearch={handleResponsibleSearch}/>
           </div>
         </>
       )}
 
       {/* Results list */}
-      {step === 'list' && (
-        <ResultsList events={events} onSelect={handleSelect} onBack={handleBack} />
+      {step==='list' && (
+        <ResultsList events={events} onSelect={handleSelect} onBack={handleBack}/>
       )}
 
       {/* Detail view */}
-      {step === 'detail' && selectedEvent && (
-        <DetailView event={selectedEvent} onBack={handleBack} />
+      {step==='detail' && selectedEvent && (
+        <DetailView event={selectedEvent} onBack={handleBack} token={null} setToken={()=>{}}/>
       )}
     </div>
   );
